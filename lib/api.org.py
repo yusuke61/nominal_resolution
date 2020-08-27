@@ -72,15 +72,15 @@ def mean_resolution(cellarea, latitude_bounds, longitude_bounds,
     :rtype: `float [,cdms2.tvariable.TransientVariable]`_
     """
 
-    #if longitude_bounds is None and latitude_bounds is None and has_cdms:
-    #    try:  # Ok maybe we can get this info from cellarea data
-    #        mesh = cellarea.getGrid().getMesh()
-    #        latitude_bounds = mesh[:, 0]
-    #        longitude_bounds = mesh[:, 1]
-    #        warnings.warn(
-    #            "You did not pass lat/lon bounds but we inferred them from cellarea")
-    #    except BaseException:
-    #        pass
+    if longitude_bounds is None and latitude_bounds is None and has_cdms:
+        try:  # Ok maybe we can get this info from cellarea data
+            mesh = cellarea.getGrid().getMesh()
+            latitude_bounds = mesh[:, 0]
+            longitude_bounds = mesh[:, 1]
+            warnings.warn(
+                "You did not pass lat/lon bounds but we inferred them from cellarea")
+        except BaseException:
+            pass
 
     if longitude_bounds is None or latitude_bounds is None:
         raise RuntimeError(
@@ -94,20 +94,28 @@ def mean_resolution(cellarea, latitude_bounds, longitude_bounds,
     # distance between successive corners
     nverts = latitude_bounds.shape[-1]
     sh = list(latitude_bounds.shape[:-1])
+    del_lats = numpy.ma.zeros(sh, dtype=numpy.float)
+    del_lons = numpy.ma.zeros(sh, dtype=numpy.float)
     max_distance = numpy.ma.zeros(sh, dtype=numpy.float)
 
     for i in range(nverts - 1):
         for j in range(i + 1, nverts):
-            del_lats = numpy.ma.absolute(latitude_bounds[:, :, i] - latitude_bounds[:, :, j])
-            del_lons = numpy.ma.absolute(longitude_bounds[:, :, i] - longitude_bounds[:, :, j])
-            del_lons = numpy.ma.where(numpy.ma.greater(del_lons, numpy.pi), numpy.ma.absolute(del_lons - 2. * numpy.pi), del_lons)
+            del_lats = numpy.ma.absolute(
+                latitude_bounds[:, i] - latitude_bounds[:, j])
+            del_lons = numpy.ma.absolute(
+                longitude_bounds[:, i] - longitude_bounds[:, j])
+            del_lons = numpy.ma.where(
+                numpy.ma.greater(
+                    del_lons, numpy.pi), numpy.ma.absolute(
+                    del_lons - 2. * numpy.pi), del_lons)
             # formula from: https://en.wikipedia.org/wiki/Great-circle_distance
             distance = 2. * numpy.ma.arcsin(numpy.ma.sqrt(numpy.ma.sin(del_lats / 2.)**2 + numpy.ma.cos(
                 latitude_bounds[:, i]) * numpy.ma.cos(latitude_bounds[:, j]) * numpy.ma.sin(del_lons / 2.)**2))
             max_distance = numpy.ma.maximum(max_distance, distance.filled(0.0))
 
     radius = 6371.  # in km
-    accumulation = numpy.ma.sum(cellarea * max_distance) * radius / numpy.ma.sum(cellarea)
+    accumulation = numpy.ma.sum(
+        cellarea * max_distance) * radius / numpy.ma.sum(cellarea)
     if returnMaxDistance:
         return accumulation, max_distance * radius
     else:
