@@ -54,11 +54,11 @@ def mean_resolution(cellarea, latitude_bounds, longitude_bounds,
     :param cellarea: simple array, python masked array, or cdms2 variable containing area of each cell     (ny,nx)
     :type cellarea: `cdms2.tvariable.TransientVariable`_
 
-    :param latitude_bounds: 3D or 2D numpy-like array containing latitudes vertices ((ny,) nx, nvertices). If None is passed
+    :param latitude_bounds: 3D or 2D numpy-like array containing latitudes vertices (ny, (nx,) nvertices). If None is passed
                             and cdms2 is available, will try to obtain from cellarea grid
     :type latitude_bounds: `numpy.ndarray`_
 
-    :param longitude_bounds: 3D or 2D numpy-like array containing longitudes vertices ((ny,) nx, nvertices). If None is passed
+    :param longitude_bounds: 3D or 2D numpy-like array containing longitudes vertices (ny, (nx,) nvertices). If None is passed
                             and cdms2 is available, will try to obtain from cellarea grid
     :type longitude_bounds: `numpy.ndarray`_
 
@@ -72,15 +72,15 @@ def mean_resolution(cellarea, latitude_bounds, longitude_bounds,
     :rtype: `float [,cdms2.tvariable.TransientVariable]`_
     """
 
-    #if longitude_bounds is None and latitude_bounds is None and has_cdms:
-    #    try:  # Ok maybe we can get this info from cellarea data
-    #        mesh = cellarea.getGrid().getMesh()
-    #        latitude_bounds = mesh[:, 0]
-    #        longitude_bounds = mesh[:, 1]
-    #        warnings.warn(
-    #            "You did not pass lat/lon bounds but we inferred them from cellarea")
-    #    except BaseException:
-    #        pass
+    if longitude_bounds is None and latitude_bounds is None and has_cdms:
+        try:  # Ok maybe we can get this info from cellarea data
+            mesh = cellarea.getGrid().getMesh()
+            latitude_bounds = mesh[:, 0]
+            longitude_bounds = mesh[:, 1]
+            warnings.warn(
+                "You did not pass lat/lon bounds but we inferred them from cellarea")
+        except BaseException:
+            pass
 
     if longitude_bounds is None or latitude_bounds is None:
         raise RuntimeError(
